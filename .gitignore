@@ -1,0 +1,17 @@
+# Environnement virtuel
+.venv/
+venv/
+env/
+
+# Fichiers Python compilés
+__pycache__/
+*.pyc
+
+# Données générées et sauvegardes
+data/
+*.csv
+*.json
+*.zip
+
+# Fichiers système
+.DS_Store
