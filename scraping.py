@@ -37,7 +37,7 @@ def crawler_et_scraper(url_depart, log_callback=None):
     nom_base = f"{parsed_url.netloc}_{chemin}" if chemin else parsed_url.netloc
     nom_base = nom_base.replace(":", "_")
 
-    domaine_cible = parsed_url.netloc
+    domaine_cible = parsed_url.netloc.replace("www.", "")
     urls_a_visiter = [url_depart]
     urls_visitees = set()
     donnees_du_site = []
@@ -94,7 +94,9 @@ def crawler_et_scraper(url_depart, log_callback=None):
             # --- ARCHITECTURE. ---
             body_classes = soup.body.get("class", []) if soup.body else []
             est_un_article = "single-post" in body_classes
-            nombre_menus = len(soup.find_all("nav"))
+            menus_nav = soup.find_all("nav")
+            menus_div = soup.find_all(lambda tag: tag.name in ["div", "ul"] and tag.has_attr("class") and any("menu" in c.lower() or "nav" in c.lower() for c in tag["class"]))
+            nombre_menus = len(menus_nav) + len(menus_div)
             a_contenu_mobile = bool(soup.find(class_=lambda c: c and "scfm-" in c))
 
             # --- SEO. ---
@@ -136,7 +138,9 @@ def crawler_et_scraper(url_depart, log_callback=None):
                 lien_trouve = urljoin(url_courante, balise_a["href"])
                 parsed_lien = urlparse(lien_trouve)
 
-                if parsed_lien.netloc == domaine_cible:
+                netloc_propre = parsed_lien.netloc.replace("www.", "")
+
+                if netloc_propre == domaine_cible:
                     liens_internes_trouves += 1
                     lien_propre = lien_trouve.split("#")[0]
                     if (
@@ -189,11 +193,9 @@ def crawler_et_scraper(url_depart, log_callback=None):
             # --- TRAITEMENT DES IMAGES. ---
             images_trouvees = {}
             for img in zone_principale.find_all("img"):
-                src = img.get("src")
-                if not src:
-                    continue
+                src = img.get("data-src") or img.get("data-lazy-src") or img.get("src")
 
-                if src.startswith("data:"):
+                if not src or src.startswith("data:"):
                     continue
 
                 lien_image = urljoin(url_courante, src)
